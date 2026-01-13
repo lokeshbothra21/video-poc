@@ -29,6 +29,8 @@ function App() {
         setError(null);
         setResult(null);
         setProcessingTime(null);
+        setChatHistory([]);
+        setChatInput('');
 
         try {
             const response = await axios.post('http://localhost:8000/analyze_url', {
@@ -52,6 +54,8 @@ function App() {
         setError(null);
         setResult(null);
         setProcessingTime(null);
+        setChatHistory([]);
+        setChatInput('');
 
         const formData = new FormData();
         formData.append('file', file);
@@ -190,6 +194,8 @@ function App() {
                                         e.stopPropagation();
                                         setFile(null);
                                         setResult(null);
+                                        setChatHistory([]);
+                                        setChatInput('');
                                     }}
                                     title="Remove file"
                                 >
