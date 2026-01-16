@@ -5,3 +5,5 @@ google-cloud-storage
 python-multipart
 python-dotenv
 yt-dlp
+psycopg2-binary
+sqlalchemy

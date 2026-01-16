@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
 import './index.css';
@@ -12,6 +12,36 @@ function App() {
     const [activeTab, setActiveTab] = useState('upload');
     const [urlInput, setUrlInput] = useState('');
     const fileInputRef = useRef(null);
+    const [sessionId, setSessionId] = useState(null);
+
+    // Initialize or retrieve session ID on mount
+    useEffect(() => {
+        let storedSessionId = localStorage.getItem('video_analysis_session_id');
+        if (!storedSessionId) {
+            storedSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem('video_analysis_session_id', storedSessionId);
+        }
+        setSessionId(storedSessionId);
+        
+        // Load conversation history if available
+        const loadConversationHistory = async () => {
+            try {
+                const response = await axios.get(`http://localhost:8001/conversation/${storedSessionId}`);
+                if (response.data.history && response.data.history.length > 0) {
+                    const formattedHistory = response.data.history.map(msg => ({
+                        role: msg.role,
+                        content: msg.content
+                    }));
+                    setChatHistory(formattedHistory);
+                }
+            } catch (err) {
+                // No history found or error, which is fine
+                console.log("No previous conversation history");
+            }
+        };
+        
+        loadConversationHistory();
+    }, []);
 
     const handleFileChange = (e) => {
         if (e.target.files && e.target.files[0]) {
@@ -33,7 +63,7 @@ function App() {
         setChatInput('');
 
         try {
-            const response = await axios.post('http://localhost:8000/analyze_url', {
+            const response = await axios.post('http://localhost:8001/analyze_url', {
                 url: urlInput
             });
 
@@ -61,7 +91,7 @@ function App() {
         formData.append('file', file);
 
         try {
-            const response = await axios.post('http://localhost:8000/upload_and_analyze', formData, {
+            const response = await axios.post('http://localhost:8001/upload_and_analyze', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -116,9 +146,11 @@ function App() {
         setChatLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:8000/rag_chat', {
+            const response = await axios.post('http://localhost:8001/rag_chat', {
                 query: userMessage.content,
-                video_uri: result.video_uri || null
+                video_uri: result.video_uri || null,
+                cache_name: result.cache_name || null,
+                session_id: sessionId
             });
 
             const botMessage = { role: 'assistant', content: response.data.answer };
